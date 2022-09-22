@@ -62,11 +62,16 @@ Configure `config/dashboard.php`
             /**
              * Transport modes limit.
              */
-            'transport_modes' => [
-                'buses' => 2,
-                'metros' => 4,
-                'trains' => false,
-            ]
+            'buses' => [
+                'total_limit' => 5,
+                // Filter out early departures by minute. This is usually how long it takes to walk to the station. 
+                'early_departures_limit' => 5,
+            ],
+            'metros' => [
+                'total_limit' => 5,
+                'early_departures_limit' => null,
+            ],
+            'trains' => false,
         ], 
     ]   
 ]

@@ -2,6 +2,7 @@
 
 namespace Robbens\SlTile;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Spatie\Dashboard\Models\Tile;
 
@@ -30,11 +31,33 @@ class SlStore
     {
         return collect($this->tile->getData('realtimedeparturesV4'))
             ->mapWithKeys(function ($value, $key) {
-                $defaultLimit = 5;
-                $configLimit = config('dashboard.tiles.sl.transport_modes.'.$key);
-                $limit = $configLimit === false ? 0 : ($configLimit ?? $defaultLimit);
+                $modeConfig = config('dashboard.tiles.sl.transport_modes.'.$key);
+                $totalLimit = $modeConfig['total_limit'];
+                $earlyDepartureLimit = $modeConfig['early_departures_limit'];
 
-                return [$key => collect($value)->take($limit)];
+                if (!$modeConfig) {
+                    return false;
+                }
+
+                $limit = $totalLimit === false ? 0 : ($totalLimit ?? 5);
+
+                return [$key => collect($value)->filter(function ($item) use ($earlyDepartureLimit) {
+                    $departureInMinutes = Carbon::make($item['ExpectedDateTime'])->diffInMinutes();
+
+                    if (!$earlyDepartureLimit) {
+                        return true;
+                    }
+
+                    if ($item['DisplayTime'] === 'Nu') {
+                        return false;
+                    }
+
+                    if ($departureInMinutes <= $earlyDepartureLimit) {
+                        return false;
+                    }
+
+                    return true;
+                })->take($limit)];
             });
     }
 }
